@@ -2,9 +2,11 @@ package marketdata
 
 import (
 	"fmt"
+	"log"
+	"strings"
+
 	ccxt "github.com/ccxt/ccxt/go/v4"
 	"github.com/markcheno/go-talib"
-	"log"
 )
 
 type (
@@ -53,28 +55,30 @@ func NewClient(exchange *ccxt.Hyperliquid) *Client {
 }
 
 func (marketData *MarketData) Format() string {
+	var sb strings.Builder
+
 	// Print the results for the symbol
-	fmt.Printf("\n========== %s Analysis ==========\n\n", marketData.Symbol)
+	sb.WriteString(fmt.Sprintf("\n========== %s Analysis ==========\n\n", marketData.Symbol))
 
 	// Current values
-	fmt.Printf("current_price = %.1f, current_ema20 = %.3f, current_macd = %.3f, current_rsi (7 period) = %.3f\n\n",
-		marketData.CurrentPrice, marketData.CurrentEMA20, marketData.CurrentMACD, marketData.CurrentRSI7)
+	sb.WriteString(fmt.Sprintf("current_price = %.1f, current_ema20 = %.3f, current_macd = %.3f, current_rsi (7 period) = %.3f\n\n",
+		marketData.CurrentPrice, marketData.CurrentEMA20, marketData.CurrentMACD, marketData.CurrentRSI7))
 
 	// Open Interest and Funding Rate
-	fmt.Println("In addition, here is the latest BTC open interest and funding rate for perps (the instrument you are trading):")
-	fmt.Println()
+	sb.WriteString("In addition, here is the latest BTC open interest and funding rate for perps (the instrument you are trading):\n")
+	sb.WriteString("\n")
 	if marketData.OpenInterest != 0 {
 		// For now, we'll use the current value as both Latest and Average
 		// TODO: Fetch historical open interest to calculate true average
-		fmt.Printf("Open Interest: Latest: %.2f Average: %.2f\n\n", marketData.OpenInterest, marketData.OpenInterest)
+		sb.WriteString(fmt.Sprintf("Open Interest: Latest: %.2f Average: %.2f\n\n", marketData.OpenInterest, marketData.OpenInterest))
 	}
 	if marketData.FundingRate != 0 {
-		fmt.Printf("Funding Rate: %.2e\n\n", marketData.FundingRate)
+		sb.WriteString(fmt.Sprintf("Funding Rate: %.2e\n\n", marketData.FundingRate))
 	}
 
 	// Intraday series (1-minute, last 10 values)
-	fmt.Println("Intraday series (by minute, oldest → latest):")
-	fmt.Println()
+	sb.WriteString("Intraday series (by minute, oldest → latest):\n")
+	sb.WriteString("\n")
 
 	// Get last 10 values for 1m indicators
 	last10Prices := getLastN(marketData.Closes1m, 10)
@@ -83,28 +87,28 @@ func (marketData *MarketData) Format() string {
 	last10RSI7 := getLastN(marketData.RSI7_1m, 10)
 	last10RSI14 := getLastN(marketData.RSI14_1m, 10)
 
-	fmt.Printf("Mid prices: %s\n\n", formatFloatSlice(last10Prices))
-	fmt.Printf("EMA indicators (20‑period): %s\n\n", formatFloatSlice(last10EMA))
-	fmt.Printf("MACD indicators: %s\n\n", formatFloatSlice(last10MACD))
-	fmt.Printf("RSI indicators (7‑Period): %s\n\n", formatFloatSlice(last10RSI7))
-	fmt.Printf("RSI indicators (14‑Period): %s\n\n", formatFloatSlice(last10RSI14))
+	sb.WriteString(fmt.Sprintf("Mid prices: %s\n\n", formatFloatSlice(last10Prices)))
+	sb.WriteString(fmt.Sprintf("EMA indicators (20‑period): %s\n\n", formatFloatSlice(last10EMA)))
+	sb.WriteString(fmt.Sprintf("MACD indicators: %s\n\n", formatFloatSlice(last10MACD)))
+	sb.WriteString(fmt.Sprintf("RSI indicators (7‑Period): %s\n\n", formatFloatSlice(last10RSI7)))
+	sb.WriteString(fmt.Sprintf("RSI indicators (14‑Period): %s\n\n", formatFloatSlice(last10RSI14)))
 
 	// Longer-term context (4-hour timeframe)
-	fmt.Println("Longer‑term context (4‑hour timeframe):")
-	fmt.Println()
-	fmt.Printf("20‑Period EMA: %.3f vs. 50‑Period EMA: %.3f\n\n", marketData.CurrentEMA20_4h, marketData.CurrentEMA50_4h)
-	fmt.Printf("3‑Period ATR: %.3f vs. 14‑Period ATR: %.3f\n\n", marketData.CurrentATR3, marketData.CurrentATR14)
-	fmt.Printf("Current Volume: %.3f vs. Average Volume: %.3f\n\n", marketData.CurrentVolume, marketData.AvgVolume)
+	sb.WriteString("Longer‑term context (4‑hour timeframe):\n")
+	sb.WriteString("\n")
+	sb.WriteString(fmt.Sprintf("20‑Period EMA: %.3f vs. 50‑Period EMA: %.3f\n\n", marketData.CurrentEMA20_4h, marketData.CurrentEMA50_4h))
+	sb.WriteString(fmt.Sprintf("3‑Period ATR: %.3f vs. 14‑Period ATR: %.3f\n\n", marketData.CurrentATR3, marketData.CurrentATR14))
+	sb.WriteString(fmt.Sprintf("Current Volume: %.3f vs. Average Volume: %.3f\n\n", marketData.CurrentVolume, marketData.AvgVolume))
 
 	// Get last 10 values for 4h indicators
 	last10MACD4h := getLastN(marketData.MACDHist_4h, 10)
 	last10RSI14_4h := getLastN(marketData.RSI14_4h, 10)
 
-	fmt.Printf("MACD indicators: %s\n\n", formatFloatSlice(last10MACD4h))
-	fmt.Printf("RSI indicators (14‑Period): %s\n\n", formatFloatSlice(last10RSI14_4h))
+	sb.WriteString(fmt.Sprintf("MACD indicators: %s\n\n", formatFloatSlice(last10MACD4h)))
+	sb.WriteString(fmt.Sprintf("RSI indicators (14‑Period): %s\n\n", formatFloatSlice(last10RSI14_4h)))
 
-	fmt.Println("========================================")
-	return ""
+	sb.WriteString("========================================\n")
+	return sb.String()
 }
 
 // getMarketData fetches and calculates all technical indicators for a given symbol
