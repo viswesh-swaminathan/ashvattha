@@ -121,12 +121,20 @@ func (c *Client) GetAccountInfo() (*AccountInfo, error) {
 		// Extract position details (dereferencing pointers)
 		var symbol string
 		var quantity, entryPrice, currentPrice, liquidationPrice, unrealizedPnl, leverage, notional float64
+		var side string
 
 		if pos.Symbol != nil {
 			symbol = *pos.Symbol
 		}
 		if pos.Contracts != nil {
 			quantity = *pos.Contracts
+		}
+		if pos.Side != nil {
+			side = *pos.Side
+			// Make quantity negative for short positions
+			if side == "short" && quantity > 0 {
+				quantity = -quantity
+			}
 		}
 		if pos.EntryPrice != nil {
 			entryPrice = *pos.EntryPrice

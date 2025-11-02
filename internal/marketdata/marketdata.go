@@ -51,7 +51,9 @@ type (
 )
 
 func NewClient(exchange *ccxt.Hyperliquid) *Client {
-	return &Client{exchange: exchange}
+	return &Client{
+		exchange: exchange,
+	}
 }
 
 func (marketData *MarketData) Format() string {
@@ -111,7 +113,7 @@ func (marketData *MarketData) Format() string {
 	return sb.String()
 }
 
-// getMarketData fetches and calculates all technical indicators for a given symbol
+// GetMarketData fetches and calculates all technical indicators for a given symbol
 func (c *Client) GetMarketData(symbol string) (*MarketData, error) {
 	// Define timeframes
 	timeframe1m := "1m"
